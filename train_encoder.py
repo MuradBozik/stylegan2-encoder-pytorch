@@ -273,12 +273,12 @@ if __name__ == "__main__":
 
     print("load generator:", args.g_ckpt)
     g_ckpt = torch.load(args.g_ckpt, map_location=lambda storage, loc: storage)
-    g_args = g_ckpt['args']
+    #g_args = g_ckpt['args']
     
-    args.size = g_args.size
-    args.latent = g_args.latent
-    args.n_mlp = g_args.n_mlp
-    args.channel_multiplier = g_args.channel_multiplier
+    args.size = 256 # g_args.size
+    args.latent = 512 # g_args.latent
+    args.n_mlp = 8 # g_args.n_mlp
+    args.channel_multiplier = 1 # g_args.channel_multiplier
     
     encoder = Encoder(args.size, args.latent).to(device)
     generator = Generator(args.size, args.latent, args.n_mlp, channel_multiplier=args.channel_multiplier).to(device)
@@ -298,7 +298,7 @@ if __name__ == "__main__":
     
     generator.load_state_dict(g_ckpt["g_ema"])
     discriminator.load_state_dict(g_ckpt["d"])
-    d_optim.load_state_dict(g_ckpt["d_optim"])
+    # d_optim.load_state_dict(g_ckpt["d_optim"])
     
     if args.e_ckpt is not None:
         print("resume training:", args.e_ckpt)
