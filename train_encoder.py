@@ -97,8 +97,9 @@ class VGGLoss(nn.Module):
         return loss 
 
 
-def train(args, loader, encoder, generator, discriminator, e_optim, d_optim, device):
+def train(args, loader, encoder, generator, discriminator, e_optim, d_optim, device, test_loader):
     loader = sample_data(loader)
+    test_loader = sample_data(test_loader)
 
     pbar = range(args.iter)
     pbar = tqdm(pbar, initial=args.start_iter, dynamic_ncols=True, smoothing=0.01)
@@ -174,6 +175,7 @@ def train(args, loader, encoder, generator, discriminator, e_optim, d_optim, dev
         real_img = real_img.detach()
         real_img.requires_grad = False
 
+
         latents = encoder(real_img)
         recon_img, _ = generator([latents], 
                                  input_is_latent=True,
@@ -221,6 +223,32 @@ def train(args, loader, encoder, generator, discriminator, e_optim, d_optim, dev
             logger.add_scalar('D_loss/r1', r1_val, i)            
         
         if i % 100 == 0:
+
+            test_img = next(test_loader)
+            test_img = test_img.to(device)
+            test_img = test_img.detach()
+            test_img.requires_grad = False
+
+            latents_test = encoder(test_img)
+            recon_img_test, _ = generator([latents_test],
+                                     input_is_latent=True,
+                                     truncation=truncation,
+                                     truncation_latent=trunc,
+                                     randomize_noise=False)
+
+            recon_vgg_loss_test = vgg_loss(recon_img_test, test_img)
+
+            recon_l2_loss_test = F.mse_loss(recon_img_test, test_img)
+
+            recon_pred_test = discriminator(recon_img_test)
+
+            adv_loss_test = g_nonsaturating_loss(recon_pred_test) * args.adv
+
+            e_loss_test = recon_vgg_loss_test + recon_l2_loss_test + adv_loss_test
+
+            with open('validation_loss.txt', 'a') as f_val:
+                f_val.write(f"i={i}: E_loss={e_loss_test}")
+
             with torch.no_grad():
                 sample = torch.cat([real_img.detach(), recon_img.detach()])
                 utils.save_image(
@@ -264,12 +292,13 @@ if __name__ == "__main__":
     parser.add_argument("--d_reg_every", type=int, default=16)
 
     parser.add_argument("--tensorboard", action="store_true")
+
+    parser.add_argument("--test_data", type=str, default=None)
+    parser.add_argument("--start_iter", type=int, default=0)
     
     args = parser.parse_args()
 
     device = args.device
-    
-    args.start_iter = 0
 
     print("load generator:", args.g_ckpt)
     g_ckpt = torch.load(args.g_ckpt, map_location=lambda storage, loc: storage)
@@ -331,4 +360,13 @@ if __name__ == "__main__":
         drop_last=True,
     )
 
-    train(args, loader, encoder, generator, discriminator, e_optim, d_optim, device)
+    test_dataset = MultiResolutionDataset(args.test_data, transform, args.size)
+
+    test_loader = data.DataLoader(
+        test_dataset,
+        batch_size=args.batch,
+        sampler=data_sampler(test_dataset, shuffle=True),
+        drop_last=True,
+    )
+
+    train(args, loader, encoder, generator, discriminator, e_optim, d_optim, device, test_loader)
