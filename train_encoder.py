@@ -223,31 +223,33 @@ def train(args, loader, encoder, generator, discriminator, e_optim, d_optim, dev
             logger.add_scalar('D_loss/r1', r1_val, i)            
         
         if i % 100 == 0:
+            e_loss_test_total = []
+            for j in range(args.val_iter):
+                test_img = next(test_loader)
+                test_img = test_img.to(device)
+                test_img = test_img.detach()
+                test_img.requires_grad = False
 
-            test_img = next(test_loader)
-            test_img = test_img.to(device)
-            test_img = test_img.detach()
-            test_img.requires_grad = False
+                latents_test = encoder(test_img)
+                recon_img_test, _ = generator([latents_test],
+                                         input_is_latent=True,
+                                         truncation=truncation,
+                                         truncation_latent=trunc,
+                                         randomize_noise=False)
 
-            latents_test = encoder(test_img)
-            recon_img_test, _ = generator([latents_test],
-                                     input_is_latent=True,
-                                     truncation=truncation,
-                                     truncation_latent=trunc,
-                                     randomize_noise=False)
+                recon_vgg_loss_test = vgg_loss(recon_img_test, test_img)
 
-            recon_vgg_loss_test = vgg_loss(recon_img_test, test_img)
+                recon_l2_loss_test = F.mse_loss(recon_img_test, test_img)
 
-            recon_l2_loss_test = F.mse_loss(recon_img_test, test_img)
+                recon_pred_test = discriminator(recon_img_test)
 
-            recon_pred_test = discriminator(recon_img_test)
+                adv_loss_test = g_nonsaturating_loss(recon_pred_test) * args.adv
 
-            adv_loss_test = g_nonsaturating_loss(recon_pred_test) * args.adv
-
-            e_loss_test = recon_vgg_loss_test + recon_l2_loss_test + adv_loss_test
+                e_loss_test = recon_vgg_loss_test + recon_l2_loss_test + adv_loss_test
+                e_loss_test_total.append(e_loss_test)
 
             with open('validation_loss.txt', 'a') as f_val:
-                f_val.write(f"i={i}: E_loss={e_loss_test}")
+                f_val.write(f"i={i}: E_loss_avg={np.array(e_loss_test_total).mean()}")
 
             with torch.no_grad():
                 sample = torch.cat([real_img.detach(), recon_img.detach()])
@@ -295,6 +297,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--test_data", type=str, default=None)
     parser.add_argument("--start_iter", type=int, default=0)
+    parser.add_argument("--val_iter", type=int, default=100)
+    parser.add_argument("--val_batch", type=int, default=1)
     
     args = parser.parse_args()
 
@@ -364,7 +368,7 @@ if __name__ == "__main__":
 
     test_loader = data.DataLoader(
         test_dataset,
-        batch_size=args.batch,
+        batch_size=args.val_batch,
         sampler=data_sampler(test_dataset, shuffle=True),
         drop_last=True,
     )
