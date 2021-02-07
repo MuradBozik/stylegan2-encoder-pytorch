@@ -225,6 +225,8 @@ def train(args, loader, encoder, generator, discriminator, e_optim, d_optim, dev
         
         if i % 100 == 0:
             e_loss_test_total = []
+
+
             for j in range(args.val_iter):
                 test_img = next(test_loader)
                 test_img = test_img.to(device)
@@ -248,16 +250,35 @@ def train(args, loader, encoder, generator, discriminator, e_optim, d_optim, dev
 
                 e_loss_test = recon_vgg_loss_test + recon_l2_loss_test + adv_loss_test
                 e_loss_test_total.append(e_loss_test)
+                if j == 0:
+                    recon_img_test_batch = recon_img_test.detach()
+                    test_img_batch = test_img.detach()
+                else:
+                    recon_img_test_batch = torch.cat([recon_img_test_batch.detach(), recon_img_test.detach()])
+                    test_img_batch = torch.cat([test_img_batch.detach(), test_img.detach()])
+
 
             with open('validation_loss.txt', 'a') as f_val:
                 f_val.write(f"i={i}: E_loss_avg={np.array(e_loss_test_total).mean()}")
 
             with torch.no_grad():
+                try:
+                    print(real_img.shape, recon_img.shape)
+                except:
+                    print("ERROR!")
                 sample = torch.cat([real_img.detach(), recon_img.detach()])
                 utils.save_image(
                     sample,
                     f"sample/{str(i).zfill(6)}.png",
                     nrow=int(args.batch),
+                    normalize=True,
+                    range=(-1, 1),
+                )
+                test_sample = torch.cat([test_img_batch.detach(), recon_img_test_batch.detach()])
+                utils.save_image(
+                    test_sample,
+                    f"test_sample/{str(i).zfill(6)}.png",
+                    nrow=int(args.val_iter),
                     normalize=True,
                     range=(-1, 1),
                 )
