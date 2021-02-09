@@ -225,6 +225,8 @@ def train(args, loader, encoder, generator, discriminator, e_optim, d_optim, dev
         
         if i % 100 == 0:
             e_loss_test_total = 0
+            test_img_batch = list()
+            recon_img_test_batch = list()
 
             for j in range(args.val_iter):
                 test_img = next(test_loader)
@@ -240,12 +242,9 @@ def train(args, loader, encoder, generator, discriminator, e_optim, d_optim, dev
                                               randomize_noise=False)
                 e_loss_test = vgg_loss(recon_img_test, test_img) + F.mse_loss(recon_img_test, test_img) + g_nonsaturating_loss(discriminator(recon_img_test)) * args.adv
                 e_loss_test_total += e_loss_test
-                if j == 0:
-                    recon_img_test_batch = recon_img_test.detach()
-                    test_img_batch = test_img.detach()
-                else:
-                    recon_img_test_batch = torch.cat([recon_img_test_batch.detach(), recon_img_test.detach()])
-                    test_img_batch = torch.cat([test_img_batch.detach(), test_img.detach()])
+
+                recon_img_test_batch.append(recon_img_test.detach())
+                test_img_batch.append(test_img.detach())
 
             with open('validation_loss.txt', 'a') as f_val:
                 f_val.write(f"i={i}: E_loss_avg={e_loss_test_total/args.val_iter}")
@@ -259,11 +258,19 @@ def train(args, loader, encoder, generator, discriminator, e_optim, d_optim, dev
                     normalize=True,
                     range=(-1, 1),
                 )
-                test_sample = torch.cat([test_img.detach(), recon_img_test.detach()])
+
                 utils.save_image(
-                    test_sample,
-                    f"test_sample/{str(i).zfill(6)}.png",
-                    nrow=int(args.val_iter),
+                    test_img_batch,
+                    f"test_sample/test_real_{str(i).zfill(6)}.png",
+                    nrow=int(args.val_iter/2),
+                    normalize=True,
+                    range=(-1, 1),
+                )
+
+                utils.save_image(
+                    recon_img_test_batch,
+                    f"test_sample/test_fake_{str(i).zfill(6)}.png",
+                    nrow=int(args.val_iter / 2),
                     normalize=True,
                     range=(-1, 1),
                 )
