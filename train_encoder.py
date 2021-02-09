@@ -2,7 +2,7 @@ import argparse
 import math
 import random
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = "0"
+os.environ['CUDA_VISIBLE_DEVICES'] = "3"
 
 import numpy as np
 import torch
@@ -258,14 +258,14 @@ def train(args, loader, encoder, generator, discriminator, e_optim, d_optim, dev
                     normalize=True,
                     range=(-1, 1),
                 )
-                test_sample = torch.cat([test_img.detach(), recon_img_test.detach()])
-                utils.save_image(
-                    test_sample,
-                    f"test_sample/{str(i).zfill(6)}.png",
-                    nrow=int(args.val_iter),
-                    normalize=True,
-                    range=(-1, 1),
-                )
+                # test_sample = torch.cat([test_img.detach(), recon_img_test.detach()])
+                # utils.save_image(
+                #     test_sample,
+                #     f"test_sample/{str(i).zfill(6)}.png",
+                #     nrow=int(args.val_iter),
+                #     normalize=True,
+                #     range=(-1, 1),
+                # )
 
         if i % 10000 == 0:
             torch.save(
