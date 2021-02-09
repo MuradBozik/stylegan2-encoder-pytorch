@@ -2,6 +2,7 @@ import argparse
 import math
 import random
 import os
+os.environ['CUDA_VISIBLE_DEVICES'] = "3"
 
 import numpy as np
 import torch
