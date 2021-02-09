@@ -379,8 +379,4 @@ if __name__ == "__main__":
         drop_last=True,
     )
 
-    encoder = nn.DataParallel(encoder).to(device)
-    generator = nn.DataParallel(generator).to(device)
-    discriminator = nn.DataParallel(discriminator).to(device)
-
     train(args, loader, encoder, generator, discriminator, e_optim, d_optim, device, test_loader)
