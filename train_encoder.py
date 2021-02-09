@@ -304,8 +304,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--test_data", type=str, default=None)
     parser.add_argument("--start_iter", type=int, default=0)
-    #parser.add_argument("--val_iter", type=int, default=100)
-    parser.add_argument("--val_batch", type=int, default=8)
+    parser.add_argument("--val_iter", type=int, default=100)
+    parser.add_argument("--val_batch", type=int, default=1)
     
     args = parser.parse_args()
 
