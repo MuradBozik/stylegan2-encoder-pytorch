@@ -274,7 +274,7 @@ if __name__ == "__main__":
 
     print("load generator:", args.g_ckpt)
     g_ckpt = torch.load(args.g_ckpt, map_location=lambda storage, loc: storage)
-    g_args = g_ckpt['args']
+    #g_args = g_ckpt['args']
 
     args.size = 256  # g_args.size
     args.latent = 512  # g_args.latent
