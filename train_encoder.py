@@ -243,8 +243,8 @@ def train(args, loader, encoder, generator, discriminator, e_optim, d_optim, dev
                 e_loss_test = vgg_loss(recon_img_test, test_img) + F.mse_loss(recon_img_test, test_img) + g_nonsaturating_loss(discriminator(recon_img_test)) * args.adv
                 e_loss_test_total += e_loss_test
 
-                recon_img_test_batch.append(recon_img_test.detach())
-                test_img_batch.append(test_img.detach())
+                recon_img_test_batch.append(recon_img_test.to('cpu').detach())
+                test_img_batch.append(test_img.to('cpu').detach())
 
             with open('validation_loss.txt', 'a') as f_val:
                 f_val.write(f"i={i}: E_loss_avg={e_loss_test_total/args.val_iter}")
